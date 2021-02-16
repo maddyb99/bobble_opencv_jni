@@ -14,6 +14,8 @@ project("bobbleopencv")
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
 
+add_subdirectory(webp)
+
 add_library( # Sets the name of the library.
              native-lib
 
