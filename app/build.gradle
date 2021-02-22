@@ -16,9 +16,10 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                cppFlags ""
+                cppFlags "-frtti -fexceptions"
                 arguments "-DANDROID_ARM_MODE=arm", "-DANDROID_STL=c++_static"
-//                abiFilters "arm64-v8a"
+                arguments "-DOpenCV_DIR=" + opencvsdk + "/sdk/native"
+                abiFilters "arm64-v8a", 'armeabi-v7a'
             }
         }
     }
@@ -42,13 +43,18 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-    sourceSets {
-        main {
-            jni {
-                srcDirs 'src/main/jni', 'src/main/jniLibs'
-            }
-        }
+
+    packagingOptions {
+        pickFirst 'lib/armeabi-v7a/libopencv_java4.so'
+        pickFirst 'lib/arm64-v8a/libopencv_java4.so'
     }
+//    sourceSets {
+//        main {
+//            jni {
+//                srcDirs []
+//            }
+//        }
+//    }
 }
 
 dependencies {
@@ -61,4 +67,5 @@ dependencies {
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+    implementation project(path: ':opencv')
 }
