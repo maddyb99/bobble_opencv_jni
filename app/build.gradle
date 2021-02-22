@@ -17,6 +17,8 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags ""
+                arguments "-DANDROID_ARM_MODE=arm", "-DANDROID_STL=c++_static"
+//                abiFilters "arm64-v8a"
             }
         }
     }
@@ -39,6 +41,13 @@ android {
     }
     kotlinOptions {
         jvmTarget = '1.8'
+    }
+    sourceSets {
+        main {
+            jni {
+                srcDirs 'src/main/jni', 'src/main/jniLibs'
+            }
+        }
     }
 }
 
