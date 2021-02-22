@@ -19,7 +19,7 @@ android {
                 cppFlags "-frtti -fexceptions"
                 arguments "-DANDROID_ARM_MODE=arm", "-DANDROID_STL=c++_static"
                 arguments "-DOpenCV_DIR=" + opencvsdk + "/sdk/native"
-                abiFilters "arm64-v8a", 'armeabi-v7a'
+                abiFilters "arm64-v8a", 'armeabi-v7a', "x86"
             }
         }
     }
@@ -33,6 +33,7 @@ android {
     externalNativeBuild {
         cmake {
             path "src/main/cpp/CMakeLists.txt"
+//            path "src/main/cpp/webp/CMakeLists.txt"
             version "3.10.2"
         }
     }
@@ -47,6 +48,7 @@ android {
     packagingOptions {
         pickFirst 'lib/armeabi-v7a/libopencv_java4.so'
         pickFirst 'lib/arm64-v8a/libopencv_java4.so'
+        pickFirst 'lib/x86/libopencv_java4.so'
     }
 //    sourceSets {
 //        main {
