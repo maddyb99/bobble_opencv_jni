@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.content.Intent
+import android.content.res.AssetManager
 import android.graphics.ImageDecoder
 import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
@@ -37,6 +38,9 @@ class MainActivity : AppCompatActivity() {
             gallery.type = "video/mp4"
             startActivityForResult(gallery, pickImage)
         }
+        convertButton.setOnClickListener{
+            var webp:Unit=WebPObject(imageUri?.path!!);
+        }
         // Example of a call to a native method
         findViewById<TextView>(R.id.sample_text).text = stringFromJNI().javaClass.simpleName
     }
@@ -49,7 +53,6 @@ class MainActivity : AppCompatActivity() {
 //            var realPathUtil:RealPathUtil= RealPathUtil;
 //            var realPath: String? =realPathUtil.getRealPath(applicationContext,imageUri!!);
             Log.d("${this::class.simpleName}", "PATH: ${imageUri.getFilePath(context = applicationContext)}")
-            WebPObject(imageUri?.path!!);
             Log.d("${this::class.simpleName}", "TYPE: ${data?.resolveType(contentResolver)}")
             if(data?.resolveType(contentResolver)=="video/mp4") {
                 videoView.isEnabled=true
