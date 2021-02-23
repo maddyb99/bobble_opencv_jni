@@ -34,12 +34,12 @@ class MainActivity : AppCompatActivity() {
 //        imageView.isEnabled=false
 //        videoView.isEnabled=false
         loadButton.setOnClickListener {
-            val gallery = Intent(Intent.ACTION_GET_CONTENT)
+            val gallery = Intent(Intent.ACTION_PICK)
             gallery.type = "video/mp4"
             startActivityForResult(gallery, pickImage)
         }
         convertButton.setOnClickListener{
-            var webp:Unit=WebPObject(imageUri?.path!!);
+            var webp:Unit=WebPObject(imageUri?.getFilePath(context=applicationContext)!!);
         }
         // Example of a call to a native method
         findViewById<TextView>(R.id.sample_text).text = stringFromJNI().javaClass.simpleName
