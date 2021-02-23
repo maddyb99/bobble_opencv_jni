@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         imageView = findViewById(R.id.imageView)
-        videoView=findViewById(R.id.videoView)
+//        videoView=findViewById(R.id.videoView)
         loadButton = findViewById(R.id.buttonLoadPicture)
         convertButton = findViewById(R.id.convertButton)
         convertButton.isEnabled=false
@@ -35,11 +35,11 @@ class MainActivity : AppCompatActivity() {
 //        videoView.isEnabled=false
         loadButton.setOnClickListener {
             val gallery = Intent(Intent.ACTION_PICK)
-            gallery.type = "video/mp4"
+            gallery.type = "image/webp"
             startActivityForResult(gallery, pickImage)
         }
         convertButton.setOnClickListener{
-            var webp:Unit=WebPObject(imageUri?.getFilePath(context=applicationContext)!!);
+            var webp:Unit=WebPObject(imageUri?.getFilePath(context=applicationContext)!!,cacheDir.absolutePath);
         }
         // Example of a call to a native method
         findViewById<TextView>(R.id.sample_text).text = stringFromJNI().javaClass.simpleName
@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
      * A native method that is implemented by the 'native-lib' native library,
      * which is packaged with this application.
      */
-    external fun WebPObject(str:String):Unit
+    external fun WebPObject(path:String,cachePath:String):Unit
     external fun stringFromJNI():String
 
     companion object {
