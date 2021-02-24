@@ -1,20 +1,23 @@
 package tech.maddybcorp.bobbleopencv
 
+import android.Manifest
+import android.app.Activity
 import android.content.Context
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
 import android.content.Intent
-import android.content.res.AssetManager
+import android.content.pm.PackageManager
 import android.graphics.ImageDecoder
 import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
+import android.os.Bundle
 import android.util.Log
-import android.widget.TextView
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.VideoView
-import androidx.core.graphics.PathUtils
-import androidx.core.net.toFile
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import java.io.File
+
 
 class MainActivity : AppCompatActivity() {
     lateinit var imageView: ImageView
@@ -23,6 +26,22 @@ class MainActivity : AppCompatActivity() {
     lateinit var convertButton: Button
     private val pickImage = 2
     private var imageUri: Uri?=null
+
+    fun verifyStoragePermissions(activity: Activity?) {
+        // Check if we have write permission
+        val permission = ActivityCompat.checkSelfPermission(
+            activity!!,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            // We don't have permission so prompt the user
+            ActivityCompat.requestPermissions(
+                activity!!,
+                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE),
+            200)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -39,7 +58,12 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(gallery, pickImage)
         }
         convertButton.setOnClickListener{
-            var webp:Unit=WebPObject(imageUri?.getFilePath(context=applicationContext)!!,cacheDir.absolutePath);
+            verifyStoragePermissions(this)
+            var webp:Long=webPObjectInit(imageUri?.getFilePath(context = applicationContext)!!, cacheDir.absolutePath);
+            var loc:String=webPMergeFrames(cacheDir.absolutePath,webp);
+            Log.d("${this::class.simpleName}", "FINAL WEBP PATH: $loc");
+            setWebP(Uri.parse(loc))
+            findViewById<TextView>(R.id.sample_text).text=loc;
         }
         // Example of a call to a native method
         findViewById<TextView>(R.id.sample_text).text = stringFromJNI().javaClass.simpleName
@@ -47,12 +71,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        Log.d("${this::class.simpleName}", "RESULT: ${resultCode== RESULT_OK}")
+        Log.d("${this::class.simpleName}", "RESULT: ${resultCode == RESULT_OK}")
         if (resultCode == RESULT_OK && requestCode == pickImage) {
             imageUri = data?.data
 //            var realPathUtil:RealPathUtil= RealPathUtil;
 //            var realPath: String? =realPathUtil.getRealPath(applicationContext,imageUri!!);
-            Log.d("${this::class.simpleName}", "PATH: ${imageUri.getFilePath(context = applicationContext)}")
+            Log.d(
+                "${this::class.simpleName}",
+                "PATH: ${imageUri.getFilePath(context = applicationContext)}"
+            )
             Log.d("${this::class.simpleName}", "TYPE: ${data?.resolveType(contentResolver)}")
             if(data?.resolveType(contentResolver)=="video/mp4") {
                 videoView.isEnabled=true
@@ -63,26 +90,36 @@ class MainActivity : AppCompatActivity() {
             }
             else{
                 imageView.isEnabled=true
-            Log.d("${this::class.simpleName}", "ANDROID VERSION: ${android.os.Build.VERSION.SDK_INT}")
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                var source=ImageDecoder.createSource(contentResolver, imageUri!!)
-                val drawable = ImageDecoder.decodeDrawable(source)
-                imageView.setImageDrawable(drawable)
-                if(drawable is AnimatedImageDrawable)
-                    drawable.start()
-                convertButton.isEnabled=true
-            } else {
-                TODO("VERSION.SDK_INT < P")
-            }
+                Log.d(
+                    "${this::class.simpleName}",
+                    "ANDROID VERSION: ${android.os.Build.VERSION.SDK_INT}"
+                )
+                setWebP(imageUri!!)
+
             }
 //            imageView.setImageURI(imageUri)
+        }
+    }
+
+    fun setWebP(uri:Uri){
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            var source=ImageDecoder.createSource(contentResolver, uri)
+            val drawable = ImageDecoder.decodeDrawable(source)
+            imageView.setImageDrawable(drawable)
+            if(drawable is AnimatedImageDrawable)
+                drawable.start()
+            convertButton.isEnabled=true
+        } else {
+            TODO("VERSION.SDK_INT < P")
         }
     }
     /**
      * A native method that is implemented by the 'native-lib' native library,
      * which is packaged with this application.
      */
-    external fun WebPObject(path:String,cachePath:String):Unit
+    external fun webPObjectInit(path: String, cachePath: String):Long
+    external fun webPUpdateFrames(frame: String, num: Int, webpManip: Unit):Long
+    external fun webPMergeFrames(path: String, webpManip: Long):String
     external fun stringFromJNI():String
 
     companion object {
