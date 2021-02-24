@@ -9,6 +9,7 @@ import android.graphics.ImageDecoder
 import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.widget.Button
 import android.widget.ImageView
@@ -16,7 +17,10 @@ import android.widget.TextView
 import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.net.toUri
 import java.io.File
+import java.net.URL
+import java.util.concurrent.Executor
 
 
 class MainActivity : AppCompatActivity() {
@@ -60,9 +64,18 @@ class MainActivity : AppCompatActivity() {
         convertButton.setOnClickListener{
             verifyStoragePermissions(this)
             var webp:Long=webPObjectInit(imageUri?.getFilePath(context = applicationContext)!!, cacheDir.absolutePath);
-            var loc:String=webPMergeFrames(cacheDir.absolutePath,webp);
-            Log.d("${this::class.simpleName}", "FINAL WEBP PATH: $loc");
-            setWebP(Uri.parse(loc))
+            var loc:String=webPMergeFrames(Environment.getExternalStorageDirectory().absolutePath+'/'+Environment.DIRECTORY_DOWNLOADS,webp);
+            Log.d("${this::class.simpleName}", "FINAL WEBP PATH: $loc")
+            ///The api request currently crashes the app
+//            val apiRequest:ApiRequest= ApiRequest(URL("https://bobblification-api-old.bobbleapp.asia/api/v2/bobble"))
+////            val onUpload:ApiRequest.OnFileUploadedListener=ApiRequest.OnFileUploadedListener
+//            apiRequest.addFormField("gender","male")
+//            apiRequest.addFilePart("image",File("${cacheDir.absolutePath}/0.jpg"),"0.jpg","image/jpeg")
+//            val t=Thread(
+//                Runnable{ apiRequest.upload(null) }
+//            )
+//            t.start()
+            setWebP(File(loc).toUri())
             findViewById<TextView>(R.id.sample_text).text=loc;
         }
         // Example of a call to a native method
@@ -103,7 +116,8 @@ class MainActivity : AppCompatActivity() {
 
     fun setWebP(uri:Uri){
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-            var source=ImageDecoder.createSource(contentResolver, uri)
+
+            var source=ImageDecoder.createSource(contentResolver,uri)
             val drawable = ImageDecoder.decodeDrawable(source)
             imageView.setImageDrawable(drawable)
             if(drawable is AnimatedImageDrawable)
