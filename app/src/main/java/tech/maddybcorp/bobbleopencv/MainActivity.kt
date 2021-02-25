@@ -10,7 +10,7 @@ import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.os.StrictMode
+import android.system.Os
 import android.util.Log
 import android.widget.Button
 import android.widget.ImageView
@@ -19,12 +19,7 @@ import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.io.File
 import java.net.URL
 
@@ -40,15 +35,19 @@ class MainActivity : AppCompatActivity() {
     fun verifyStoragePermissions(activity: Activity?) {
         // Check if we have write permission
         val permission = ActivityCompat.checkSelfPermission(
-                activity!!,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            activity!!,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
         )
         if (permission != PackageManager.PERMISSION_GRANTED) {
             // We don't have permission so prompt the user
             ActivityCompat.requestPermissions(
-                    activity!!,
-                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE),
-                    200)
+                activity!!,
+                arrayOf(
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                ),
+                200
+            )
         }
     }
 
@@ -70,31 +69,52 @@ class MainActivity : AppCompatActivity() {
         }
 
         convertButton.setOnClickListener {
+            convertButton.isEnabled=false;
             verifyStoragePermissions(this)
-            var webp:Long=webPObjectInit(imageUri?.getFilePath(context = applicationContext)!!, cacheDir.absolutePath);
+            var webp:Long=webPObjectInit(
+                imageUri?.getFilePath(context = applicationContext)!!,
+                cacheDir.absolutePath
+            );
             val numFrames=webPCountFrames(webp)-1
-            val ioScope = CoroutineScope(Dispatchers.IO + Job() )
-            ioScope.launch {
-                val job = ArrayList<Job>()
-                for (i in 0..numFrames) {
+            val ioScope = CoroutineScope(Dispatchers.IO + Job())
+            val deferred = (0..numFrames).map { n ->
+                ioScope.async {
                     val apiRequest:ApiRequest= ApiRequest(URL("https://bobblification-api-old.bobbleapp.asia/api/v2/bobble"))
                     val onUpload:OnFileUploadListenerImpl=OnFileUploadListenerImpl()
                     apiRequest.addFormField("gender", "male")
-                    apiRequest.addFilePart("image", File("${cacheDir.absolutePath}/$i.jpg"), "0.jpg", "image/jpeg")
-                    job.add(launch {
-                        Log.i("API Request", "Network Call ID: $i")
-                        apiRequest.upload(onUpload)
-                        Log.i("API Response",onUpload.faceImageUrl)
-                    })
+                    apiRequest.addFilePart(
+                        "image",
+                        File("${cacheDir.absolutePath}/$n.jpg"),
+                        "$n.jpg",
+                        "image/jpeg"
+                    )
+
+                    Log.i("API Request", "Network Call ID: $n")
+                    apiRequest.upload(onUpload)
+                    Log.i("API Response $n", onUpload.faceImageUrl)
+                    val url = URL(onUpload.faceImageUrl)
+                    url.openConnection()
+//                        val stream = url.openStream()
+                    val image =url.readBytes()
+                    Log.i("API Response", "downloaded $n")
+                    webPUpdateFrames(image, n.toInt(), webp)
                 }
             }
-
-            var loc:String=webPMergeFrames(Environment.getExternalStorageDirectory().absolutePath + '/' + Environment.DIRECTORY_DOWNLOADS, webp);
-            Log.d("${this::class.simpleName}", "FINAL WEBP PATH: $loc")
-//            setWebP(File(loc).toUri())
-            findViewById<TextView>(R.id.sample_text).text=loc;
+            val allJobs=GlobalScope.async {
+                deferred.awaitAll();
+            }
+            allJobs.invokeOnCompletion {
+                var loc:String=webPMergeFrames(
+                    Environment.getExternalStorageDirectory().absolutePath + '/' + Environment.DIRECTORY_DOWNLOADS,
+                    webp
+                );
+                Log.d("${this::class.simpleName}", "FINAL WEBP PATH: $loc")
+                runOnUiThread {
+                    setWebP(File(loc).toUri())
+                    findViewById<TextView>(R.id.sample_text).text=loc;
+                }
+            }
         }
-        // Example of a call to a native method
         findViewById<TextView>(R.id.sample_text).text = stringFromJNI().javaClass.simpleName
     }
 
@@ -106,8 +126,8 @@ class MainActivity : AppCompatActivity() {
 //            var realPathUtil:RealPathUtil= RealPathUtil;
 //            var realPath: String? =realPathUtil.getRealPath(applicationContext,imageUri!!);
             Log.d(
-                    "${this::class.simpleName}",
-                    "PATH: ${imageUri.getFilePath(context = applicationContext)}"
+                "${this::class.simpleName}",
+                "PATH: ${imageUri.getFilePath(context = applicationContext)}"
             )
             Log.d("${this::class.simpleName}", "TYPE: ${data?.resolveType(contentResolver)}")
             if(data?.resolveType(contentResolver)=="video/mp4") {
@@ -120,10 +140,11 @@ class MainActivity : AppCompatActivity() {
             else{
                 imageView.isEnabled=true
                 Log.d(
-                        "${this::class.simpleName}",
-                        "ANDROID VERSION: ${android.os.Build.VERSION.SDK_INT}"
+                    "${this::class.simpleName}",
+                    "ANDROID VERSION: ${android.os.Build.VERSION.SDK_INT}"
                 )
                 setWebP(imageUri!!)
+                convertButton.isEnabled=true
 
             }
 //            imageView.setImageURI(imageUri)
@@ -138,7 +159,6 @@ class MainActivity : AppCompatActivity() {
             imageView.setImageDrawable(drawable)
             if(drawable is AnimatedImageDrawable)
                 drawable.start()
-            convertButton.isEnabled=true
         } else {
             TODO("VERSION.SDK_INT < P")
         }
@@ -148,10 +168,10 @@ class MainActivity : AppCompatActivity() {
      * which is packaged with this application.
      */
     external fun webPObjectInit(path: String, cachePath: String):Long
-    external fun webPUpdateFrames(frame: String, num: Int, webpManip: Long):Long
+    external fun webPUpdateFrames(frame: ByteArray, num: Int, webpManip: Long):Long
     external fun webPMergeFrames(path: String, webpManip: Long):String
     external fun stringFromJNI():String
-    external fun webPCountFrames(webpManip:Long):Long
+    external fun webPCountFrames(webpManip: Long):Long
 
     companion object {
         // Used to load the 'native-lib' library on application startup.

@@ -9,7 +9,7 @@ import org.json.JSONObject
     override fun onFileUploadingSuccess(response: String){
         val jsonObject = JSONObject(response)
         faceImageUrl=jsonObject.getString("faceImageURL")
-        Log.d("API",response)
+//        Log.d("API",response)
     }
 
     override fun onFileUploadingFailed(responseCode: Int){

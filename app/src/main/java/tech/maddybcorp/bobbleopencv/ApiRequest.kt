@@ -20,6 +20,9 @@ class ApiRequest
 @Throws(IOException::class)
 constructor(url: URL) {
 
+//    constructor(url:URL,webp:Long) : this(url) {
+//        this.webp=webp;
+//    }
     companion object {
         private val LINE_FEED = "\r\n"
         private val maxBufferSize = 1024 * 1024
@@ -27,6 +30,7 @@ constructor(url: URL) {
     }
 
     // creates a unique boundary based on time stamp
+//    private var webp:Long=0
     private val boundary: String = "===" + System.currentTimeMillis() + "==="
     private val httpConnection: HttpURLConnection = url.openConnection() as HttpURLConnection
     private val outputStream: OutputStream
