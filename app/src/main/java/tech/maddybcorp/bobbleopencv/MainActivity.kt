@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
         if (permission != PackageManager.PERMISSION_GRANTED) {
             // We don't have permission so prompt the user
             ActivityCompat.requestPermissions(
-                activity!!,
+                activity,
                 arrayOf(
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     Manifest.permission.READ_EXTERNAL_STORAGE
@@ -55,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        verifyStoragePermissions(this)
         imageView = findViewById(R.id.imageView)
 //        videoView=findViewById(R.id.videoView)
         loadButton = findViewById(R.id.buttonLoadPicture)
@@ -69,8 +70,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         convertButton.setOnClickListener {
-            convertButton.isEnabled=false;
-            verifyStoragePermissions(this)
+            convertButton.isEnabled=false
+            loadButton.isEnabled=false
+            findViewById<TextView>(R.id.sample_text).text = "Converting"
             var webp:Long=webPObjectInit(
                 imageUri?.getFilePath(context = applicationContext)!!,
                 cacheDir.absolutePath
@@ -111,11 +113,12 @@ class MainActivity : AppCompatActivity() {
                 Log.d("${this::class.simpleName}", "FINAL WEBP PATH: $loc")
                 runOnUiThread {
                     setWebP(File(loc).toUri())
-                    findViewById<TextView>(R.id.sample_text).text=loc;
+                    findViewById<TextView>(R.id.sample_text).text=loc
+                    loadButton.isEnabled=true
                 }
             }
         }
-        findViewById<TextView>(R.id.sample_text).text = stringFromJNI().javaClass.simpleName
+        findViewById<TextView>(R.id.sample_text).text = "Ready"
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -170,13 +173,10 @@ class MainActivity : AppCompatActivity() {
     external fun webPObjectInit(path: String, cachePath: String):Long
     external fun webPUpdateFrames(frame: ByteArray, num: Int, webpManip: Long):Long
     external fun webPMergeFrames(path: String, webpManip: Long):String
-    external fun stringFromJNI():String
     external fun webPCountFrames(webpManip: Long):Long
 
     companion object {
-        // Used to load the 'native-lib' library on application startup.
         init {
-            System.loadLibrary("native-lib")
             System.loadLibrary("opencv_java4")
             System.loadLibrary("bobble_opencv")
         }
