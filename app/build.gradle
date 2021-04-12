@@ -19,7 +19,7 @@ android {
                 cppFlags "-frtti -fexceptions"
                 arguments "-DANDROID_ARM_MODE=arm", "-DANDROID_STL=c++_static"
                 arguments "-DOpenCV_DIR=" + opencvsdk + "/sdk/native"
-                abiFilters "arm64-v8a", 'armeabi-v7a'
+                abiFilters 'armeabi-v7a'
             }
         }
     }
